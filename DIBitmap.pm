@@ -106,7 +106,7 @@ require AutoLoader;
         XPM_DEFAULT
 );
 
-$VERSION = '0.12';
+$VERSION = '0.13';
 
 sub AUTOLOAD {
     # This AUTOLOAD is used to 'autoload' constants from the constant()

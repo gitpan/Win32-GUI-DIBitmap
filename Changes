@@ -1,5 +1,7 @@
 Revision history for Perl extension FreeImage.
 
+0.13  08 / 12 / 2003
+	- Correct memory leak in newFromWindow, newFromDC [Thank to Steve Pick]
 0.12  17 / 11 / 2003
         - Use FreeImage 3.0.4
 0.11  11 / 11 / 2003

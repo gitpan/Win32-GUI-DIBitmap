@@ -1,4 +1,4 @@
-Win32::GUI::DIBitmap 0.12
+Win32::GUI::DIBitmap 0.13
 =========================
 
 Win32::GUI::DIBitmap add new reading/writing bitmap formats to Win32::GUI

@@ -831,7 +831,7 @@ newFromDC (packname="Win32::GUI::DIBitmap", hdc, x=0, y=0, w=0, h=0)
     int      h
 PREINIT:
     HDC      hdcCompatible;
-    HBITMAP  hbitmap;
+    HBITMAP  hbitmap, hold;
     RECT     rect;
     BITMAP   bmp;
     int      cClrBits;
@@ -856,8 +856,8 @@ CODE:
       DeleteDC (hdcCompatible);
       XSRETURN_EMPTY;
     }
-
-    if (!SelectObject(hdcCompatible, hbitmap))
+    hold = SelectObject(hdcCompatible, hbitmap);
+    if (!hold)
     {
       DeleteObject(hbitmap);
       DeleteDC (hdcCompatible);
@@ -866,6 +866,7 @@ CODE:
 
     if (!GetObject (hbitmap, sizeof(BITMAP), (LPSTR)&bmp))
     {
+      SelectObject(hdcCompatible, hold);
       DeleteObject(hbitmap);
       DeleteDC (hdcCompatible);
       XSRETURN_EMPTY;
@@ -877,6 +878,7 @@ CODE:
     dib = FreeImage_Allocate (bmp.bmWidth, bmp.bmHeight, cClrBits );
     if (dib == NULL)
     {
+      SelectObject(hdcCompatible, hold);
       DeleteObject(hbitmap);
       DeleteDC (hdcCompatible);
       XSRETURN_EMPTY;
@@ -888,6 +890,8 @@ CODE:
                FreeImage_GetInfo(dib), DIB_RGB_COLORS);
 
     RETVAL = dib;
+
+    SelectObject(hdcCompatible, hold);
     DeleteDC (hdcCompatible);
     DeleteObject(hbitmap);
 OUTPUT:
@@ -905,7 +909,7 @@ newFromWindow (packname="Win32::GUI::DIBitmap", hwnd, flag=0)
 PREINIT:
     HDC      hdc;
     HDC      hdcCompatible;
-    HBITMAP  hbitmap;
+    HBITMAP  hbitmap, hold;
     RECT     rect;
     BITMAP   bmp;
     int      cClrBits;
@@ -932,23 +936,25 @@ CODE:
     if (hbitmap == 0)
     {
       DeleteDC (hdcCompatible);
-      DeleteDC (hdc);
+      ReleaseDC(hwnd, hdc);
       XSRETURN_EMPTY;
     }
 
-    if (!SelectObject(hdcCompatible, hbitmap))
+    hold = SelectObject(hdcCompatible, hbitmap);
+    if (!hold)
     {
       DeleteObject(hbitmap);
       DeleteDC (hdcCompatible);
-      DeleteDC (hdc);
+      ReleaseDC(hwnd, hdc);
       XSRETURN_EMPTY;
     }
 
     if (!GetObject (hbitmap, sizeof(BITMAP), (LPSTR)&bmp))
     {
+      SelectObject(hdcCompatible, hold);
       DeleteObject(hbitmap);
       DeleteDC (hdcCompatible);
-      DeleteDC (hdc);
+      ReleaseDC(hwnd, hdc);
       XSRETURN_EMPTY;
     }
 
@@ -958,9 +964,10 @@ CODE:
     dib = FreeImage_Allocate (bmp.bmWidth, bmp.bmHeight, cClrBits );
     if (dib == NULL)
     {
+      SelectObject(hdcCompatible, hold);
       DeleteObject(hbitmap);
       DeleteDC (hdcCompatible);
-      DeleteDC (hdc);
+      ReleaseDC(hwnd, hdc);
       XSRETURN_EMPTY;
     }
 
@@ -971,9 +978,10 @@ CODE:
 
     RETVAL = dib;
 
+    SelectObject(hdcCompatible, hold);
     DeleteObject(hbitmap);
     DeleteDC (hdcCompatible);
-    DeleteDC (hdc);
+    ReleaseDC(hwnd, hdc);
 OUTPUT:
     RETVAL
 
@@ -1183,13 +1191,13 @@ CODE:
       res = FreeImage_SaveToHandle (fif, dib, &io, (fi_handle) &handle, flag);
       if (res)
         RETVAL = newSVpv(handle.data, size);
-      else
-        XSRETURN_EMPTY;
 
       safefree (handle.data);
+      if (!res)
+        XSRETURN_UNDEF;
     }
     else
-      XSRETURN_EMPTY;
+      XSRETURN_UNDEF;
   }
 OUTPUT:
     RETVAL
@@ -2154,7 +2162,7 @@ void
 DESTROY(dib)
    Win32::GUI::DIBitmap   dib
 CODE:
-   FreeImage_Unload(dib);
+  FreeImage_Unload(dib);
 
   #
   #
