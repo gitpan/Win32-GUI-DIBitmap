@@ -1,8 +1,14 @@
 Revision history for Perl extension FreeImage.
 
+0.15  28 / 11 / 2004
+        - Use FreeImage 3.5.1 (GIF support and LZW compression, improvements, bug fix, ...)
+        - New Win32::GUI::DIBitmap method
+            -> GetFIFMimeType
+            -> ConvertTo4Bits
+
 0.14  21 / 02 / 2004
         - Use FreeImage 3.2.0
-	- New Win32::GUI::DIBitmap method
+        - New Win32::GUI::DIBitmap method
             -> Image internal format
             -> Pixel and and Background methods
                  + SetPixel
@@ -15,7 +21,7 @@ Revision history for Perl extension FreeImage.
                 + GetComplexChannel
                 + SetComplexChannel
 0.13  08 / 12 / 2003
-	- Correct memory leak in NewFromWindow, newFromDC [Thank to Steve Pick]
+        - Correct memory leak in NewFromWindow, newFromDC [Thank to Steve Pick]
 0.12  17 / 11 / 2003
         - Use FreeImage 3.0.4
 0.11  11 / 11 / 2003

@@ -327,8 +327,11 @@ int constant (char * name, int arg)
             CONSTANT(FIT_DOUBLE);
             CONSTANT(FIT_COMPLEX);
       }
+    case 'G' :
+            CONSTANT(GIF_DEFAULT);
     case 'I' :
             CONSTANT(ICO_DEFAULT);
+            CONSTANT(ICO_MAKEALPHA);
             CONSTANT(IFF_DEFAULT);
     case 'J' :
             CONSTANT(JPEG_DEFAULT);
@@ -373,6 +376,9 @@ int constant (char * name, int arg)
             CONSTANT(TIFF_DEFLATE);
             CONSTANT(TIFF_ADOBE_DEFLATE);
             CONSTANT(TIFF_NONE);
+            CONSTANT(TIFF_CCITTFAX3);
+            CONSTANT(TIFF_CCITTFAX4);
+            CONSTANT(TIFF_LZW);
     case 'W' :
             CONSTANT(WBMP_DEFAULT);
     case 'X' :
@@ -595,7 +601,6 @@ CODE:
 OUTPUT:
     RETVAL
 
-
   #
   #
   ##################################################################
@@ -661,6 +666,28 @@ PREINIT:
     char * string;
 PPCODE:
     string = (char *) FreeImage_GetFIFRegExpr(fif);
+    if (string == NULL)
+    {
+      XSRETURN_UNDEF;
+    }
+    else
+    {
+      EXTEND(SP, 1);
+      XST_mPV(0, string);
+      XSRETURN(1);
+    }
+
+  #
+  # FIFMimeType
+  #
+
+void
+FIFMimeType(fif)
+    FREE_IMAGE_FORMAT  fif
+PREINIT:
+    char * string;
+PPCODE:
+    string = (char *) FreeImage_GetFIFMimeType(fif);
     if (string == NULL)
     {
       XSRETURN_UNDEF;
@@ -1676,6 +1703,72 @@ OUTPUT:
 
 
   #
+  # LookupX11Color
+  #
+
+void
+LookupX11Color(szColor)
+    LPCTSTR szColor
+CODE:
+  {
+    RGBQUAD value;
+    if (FreeImage_LookupX11Color(szColor, &value.rgbRed, &value.rgbGreen, &value.rgbBlue))
+    {
+      value.rgbReserved = 0xff;
+      if(GIMME == G_ARRAY)
+      {
+        EXTEND(SP, 4);
+        XST_mIV( 0, value.rgbBlue);
+        XST_mIV( 1, value.rgbGreen);
+        XST_mIV( 2, value.rgbRed);
+        XST_mIV( 3, value.rgbReserved);
+        XSRETURN(4);
+      }
+      else
+      {
+        EXTEND(SP, 1);
+        XST_mIV( 0, *((UINT*)&value));
+        XSRETURN(1);
+      }
+    }
+    else
+      XSRETURN_UNDEF;
+  }
+
+  #
+  # LookupSVGColor
+  #
+
+void
+LookupSVGColor(szColor)
+    LPCTSTR szColor
+CODE:
+  {
+    RGBQUAD value;
+    if (FreeImage_LookupSVGColor(szColor, &value.rgbRed, &value.rgbGreen, &value.rgbBlue))
+    {
+      value.rgbReserved = 0xff;
+      if(GIMME == G_ARRAY)
+      {
+        EXTEND(SP, 4);
+        XST_mIV( 0, value.rgbBlue);
+        XST_mIV( 1, value.rgbGreen);
+        XST_mIV( 2, value.rgbRed);
+        XST_mIV( 3, value.rgbReserved);
+        XSRETURN(4);
+      }
+      else
+      {
+        EXTEND(SP, 1);
+        XST_mIV( 0, *((UINT*)&value));
+        XSRETURN(1);
+      }
+    }
+    else
+      XSRETURN_UNDEF;
+  }
+
+  #
   #
   ##################################################################
 
@@ -1989,6 +2082,18 @@ OUTPUT:
   #
   #  Conversion function
   #
+
+  #
+  # ConvertTo4Bits
+  #
+
+Win32::GUI::DIBitmap
+ConvertTo4Bits(dib)
+    Win32::GUI::DIBitmap   dib
+CODE:
+    RETVAL = FreeImage_ConvertTo4Bits(dib);
+OUTPUT:
+    RETVAL
 
   #
   # ConvertTo8Bits

@@ -83,7 +83,9 @@ require AutoLoader;
         BMP_SAVE_RLE
         CUT_DEFAULT
         DDS_DEFAULT
+        GIF_DEFAULT
         ICO_DEFAULT
+        ICO_MAKEALPHA
         IFF_DEFAULT
         JPEG_DEFAULT
         JPEG_FAST
@@ -116,12 +118,15 @@ require AutoLoader;
         TIFF_DEFLATE
         TIFF_ADOBE_DEFLATE
         TIFF_NONE
+        TIFF_CCITTFAX3
+        TIFF_CCITTFAX4
+        TIFF_LZW
         WBMP_DEFAULT
         XBM_DEFAULT
         XPM_DEFAULT
 );
 
-$VERSION = '0.14';
+$VERSION = '0.15';
 
 sub AUTOLOAD {
     # This AUTOLOAD is used to 'autoload' constants from the constant()
@@ -363,7 +368,7 @@ and some image manipulation.
 Win32::GUI::DIBitmap add new reading/writing bitmap formats to Win32::GUI
 and some image manipulation.
 
-This package use FreeImage 3.2.0, an open source image library supporting all common
+This package use FreeImage 3.5.1, an open source image library supporting all common
 bitmap formats (visit : http://freeimage.sourceforge.net/ ).
 
 Supports many formats, such as:
@@ -392,8 +397,9 @@ Supports many formats, such as:
    PSD     Y       N       Adobe Photoshop
    CUT     Y       N       Dr. Halo
    XBM     Y       N       X11 Bitmap Format
-   XPM     Y       N       X11 Pixmap Format
-   DDS     Y       N       DirectDraw Surface
+   XPM     Y       Y       X11 Pixmap Format [Export = 8 24]
+   DDS     Y       N       DirectX Surface
+   GIF     Y       Y       Graphics Interchange Format [Export = 8]
 
 FreeImage can handle multi-page file (TIFF and ICO support only).
 
@@ -422,7 +428,7 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
   FIF_PGMRAW  FIF_PNG    FIF_PPM    FIF_PPMRAW
   FIF_RAS     FIF_TARGA  FIF_TIFF   FIF_WBMP
   FIF_PSD     FIF_IFF    FIF_LBM    FIF_CUT
-  FIF_XBM     FIF_XPM    FIF_DDS
+  FIF_XBM     FIF_XPM    FIF_DDS    FIF_GIF
 
 =item C<GetFIFCount> ()
 
@@ -462,6 +468,14 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
 
   Return a description string of the format.
 
+=item C<FIFRegExpr> (fif)
+
+  Return a regexp string for identify format.
+
+=item C<FIFMimeType> (fif)
+
+  Return a mime-type string of the format.
+
 =item C<FIFSupportsReading> (fif)
 
   This format can be read ?
@@ -481,6 +495,18 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
 =item C<FIFSupportsICCProfiles> (fif)
 
   This format support ICC profile ?
+
+=head2 Colors functions
+
+=item C<LookupX11Color> (string_color)
+
+  Return Color of string color or undef if error.
+  This color value can be an integer value or a [B,G,R,A] array.
+
+=item C<LookupSVGColor> (string_color)
+
+  Return Color of string color or undef if error.
+  This color value can be an integer value or a [B,G,R,A] array.
 
 =head1 DIBITMAP OBJECT
 
@@ -510,6 +536,7 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
 
   Type   | Flag              | Description
   -------+-------------------+--------------------------------------------------
+  ICO    | ICO_MAKEALPHA     | Convert to 32bpp and create an alpha channel from the AND-mask when loading
   JPEG   | JPEG_FAST         | Load file as fast as possible (sacrifing quality)
          | JPEG_ACCURATE     | Load file with the best quality (sacrifing speed)
   PCD    | PCD_BASE          | Load picture sized 768 * 512.
@@ -566,6 +593,9 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
         | TIFF_DEFLATE        | Save using DEFLATE compression
         | TIFF_ADOBE_DEFLATE  | Save using Adobe DEFLATE compression
         | TIFF_NONE           | Save without compression
+        | TIFF_CCITTFAX3      | Save using CCITT Group 3 fax encoding
+        | TIFF_CCITTFAX4      | Save using CCITT Group 4 fax encoding
+        | TIFF_LZW            | Save using LZW compression
 
   A tempory convertion is done for 16-32bit JPEG and 16bit PNG before saving.
 
@@ -708,6 +738,10 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
 =item C<ConvertToBitmap> ()
 
   Convert a Win32::GUI::DIBitmap to a new Win32::GUI::Bitmap.
+
+=item C<ConvertTo4its> ()
+
+  Convert a Win32::GUI::DIBitmap to a new 4 bits Win32::GUI::DIBitmap.
 
 =item C<ConvertTo8Bits> ()
 
@@ -1017,8 +1051,8 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
 
 =head1 AUTHOR
 
-Laurent Rocher (lrocher@cpan.org)
-HomePage : http://perso.club-internet.fr/rocherl/Win32GUI.html
+  Laurent Rocher (lrocher@cpan.org)
+  HomePage : http://perso.club-internet.fr/rocherl/Win32GUI.html
 
 =head1 SEE ALSO
 
