@@ -13,6 +13,8 @@
 
 // #define IO_HANDLER_DEBUG
 
+#define BREAK_POINT __asm { int 3 };
+
 /*--------------------------------------------------------------------*/
 
 typedef FIBITMAP *       Win32__GUI__DIBitmap;
@@ -240,6 +242,8 @@ int constant (char * name, int arg)
             CONSTANT(BMP_SAVE_RLE);
     case 'C' :
             CONSTANT(CUT_DEFAULT);
+    case 'D' :
+            CONSTANT(DDS_DEFAULT);
     case 'F' :
       switch (name[2])
       {
@@ -271,6 +275,7 @@ int constant (char * name, int arg)
             CONSTANT(FIF_WBMP);
             CONSTANT(FIF_XBM);
             CONSTANT(FIF_XPM);
+            CONSTANT(FIF_DDS);
         // FREE_IMAGE_COLOR_TYPE
         case 'C' :
             CONSTANT(FIC_MINISWHITE);
@@ -286,6 +291,10 @@ int constant (char * name, int arg)
             CONSTANT(FICC_BLUE);
             CONSTANT(FICC_ALPHA);
             CONSTANT(FICC_BLACK);
+            CONSTANT(FICC_REAL);
+            CONSTANT(FICC_IMAG);
+            CONSTANT(FICC_MAG);
+            CONSTANT(FICC_PHASE);
         // FREE_IMAGE_DITHER
         case 'D' :
             CONSTANT(FID_FS);
@@ -294,17 +303,29 @@ int constant (char * name, int arg)
             CONSTANT(FID_CLUSTER6x6);
             CONSTANT(FID_CLUSTER8x8);
             CONSTANT(FID_CLUSTER16x16);
-        // FREE_IMAGE_QUANTIZE
-        case 'Q' :
-            CONSTANT(FIQ_WUQUANT);
-            CONSTANT(FIQ_NNQUANT);
-            // Sampling
+        // Sampling
+        case 'L' :
             CONSTANT(FILTER_BOX);
             CONSTANT(FILTER_BICUBIC);
             CONSTANT(FILTER_BILINEAR);
             CONSTANT(FILTER_BSPLINE);
             CONSTANT(FILTER_CATMULLROM);
             CONSTANT(FILTER_LANCZOS3);
+        // FREE_IMAGE_QUANTIZE
+        case 'Q' :
+            CONSTANT(FIQ_WUQUANT);
+            CONSTANT(FIQ_NNQUANT);
+        // FREE_IMAGE_TYPE
+        case 'T' :
+            CONSTANT(FIT_UNKNOWN);
+            CONSTANT(FIT_BITMAP);
+            CONSTANT(FIT_UINT16);
+            CONSTANT(FIT_INT16);
+            CONSTANT(FIT_UINT32);
+            CONSTANT(FIT_INT32);
+            CONSTANT(FIT_FLOAT);
+            CONSTANT(FIT_DOUBLE);
+            CONSTANT(FIT_COMPLEX);
       }
     case 'I' :
             CONSTANT(ICO_DEFAULT);
@@ -689,6 +710,19 @@ OUTPUT:
     RETVAL
 
   #
+  # FIFSupportsExportType
+  #
+
+BOOL
+FIFSupportsExportType(fif,type)
+    FREE_IMAGE_FORMAT fif
+    FREE_IMAGE_TYPE type
+CODE:
+    RETVAL = FreeImage_FIFSupportsExportType(fif,type);
+OUTPUT:
+    RETVAL
+
+  #
   # FIFSupportsICCProfiles
   #
 
@@ -716,7 +750,7 @@ OUTPUT:
   #
 
 Win32::GUI::DIBitmap
-new (packname="Win32::GUI::DIBitmap",width=100,height=100,bpp=24,red_mask=0,green_mask=0,blue_mask=0)
+new (packname="Win32::GUI::DIBitmap",width=100,height=100,bpp=24,red_mask=0,green_mask=0,blue_mask=0,type=FIT_BITMAP)
     char * packname
     int  width
     int  height
@@ -724,8 +758,9 @@ new (packname="Win32::GUI::DIBitmap",width=100,height=100,bpp=24,red_mask=0,gree
     UINT red_mask
     UINT green_mask
     UINT blue_mask
+    FREE_IMAGE_TYPE type
 CODE:
-    RETVAL = FreeImage_Allocate(width,height,bpp,red_mask,green_mask,blue_mask);
+    RETVAL = FreeImage_AllocateT(type,width,height,bpp,red_mask,green_mask,blue_mask);
 OUTPUT:
     RETVAL
 
@@ -1436,9 +1471,213 @@ OUTPUT:
     RETVAL
 
   #
+  # GetImageType
+  #
+
+FREE_IMAGE_TYPE
+GetImageType(dib)
+    Win32::GUI::DIBitmap   dib
+CODE:
+    RETVAL = FreeImage_GetImageType(dib);
+OUTPUT:
+    RETVAL
+
+  #
   #
   ##################################################################
 
+  ##################################################################
+  #
+  #  Pixel function
+  #
+
+  #
+  # GetPixel
+  #
+
+void
+GetPixel(dib, x, y)
+    Win32::GUI::DIBitmap   dib
+    UINT x
+    UINT y
+CODE:
+  {
+    if (FreeImage_GetBPP(dib) <= 8)
+    {
+      BYTE value;
+      if (FreeImage_GetPixelIndex(dib, x, y, &value))
+      {
+        EXTEND(SP, 1);
+        XST_mIV( 0, value);
+        XSRETURN(1);
+      }
+      else
+        XSRETURN_UNDEF;
+    }
+    else
+    {
+      RGBQUAD value;
+      if (FreeImage_GetPixelColor(dib, x, y, &value))
+      {
+        if(GIMME == G_ARRAY)
+        {
+          EXTEND(SP, 4);
+          XST_mIV( 0, value.rgbBlue);
+          XST_mIV( 1, value.rgbGreen);
+          XST_mIV( 2, value.rgbRed);
+          XST_mIV( 3, value.rgbReserved);
+          XSRETURN(4);
+        }
+        else
+        {
+          EXTEND(SP, 1);
+          XST_mIV( 0, *((UINT*)&value));
+          XSRETURN(1);
+        }
+      }
+      else
+        XSRETURN_UNDEF;
+    }
+  }
+
+  #
+  # SetPixel
+  #
+
+BOOL
+SetPixel(dib, x, y, ...)
+    Win32::GUI::DIBitmap   dib
+    UINT x
+    UINT y
+CODE:
+  {
+    // BREAK_POINT;
+    if (items != 4 && items != 6 && items != 7)
+    {
+      if(PL_dowarn) warn("SetPixel (x,y, Index/Color | Blue, Green, Red, [Alpha]");
+      RETVAL = FALSE;
+    }
+    else if (FreeImage_GetBPP(dib) <= 8)
+    {
+      BYTE value = (BYTE) SvIV(ST(3));
+      RETVAL = FreeImage_SetPixelIndex(dib, x, y, &value);
+    }
+    else
+    {
+      RGBQUAD value;
+      if (items == 4)
+      {
+        if(SvROK(ST(3)) && SvTYPE(SvRV(ST(3))) == SVt_PVAV)
+        {
+          SV** sv ;
+          AV* av = (AV*) SvRV(ST(3));
+          value.rgbBlue     = (BYTE) ((sv = av_fetch(av, 0, 0)) ? SvIV(*sv) : 0);
+          value.rgbGreen    = (BYTE) ((sv = av_fetch(av, 1, 0)) ? SvIV(*sv) : 0);
+          value.rgbRed      = (BYTE) ((sv = av_fetch(av, 2, 0)) ? SvIV(*sv) : 0);
+          value.rgbReserved = (BYTE) ((sv = av_fetch(av, 3, 0)) ? SvIV(*sv) : 0xff);
+        }
+        else
+          *((UINT*)&value) = (BYTE) SvIV(ST(3));
+      }
+      else
+      {
+        value.rgbBlue  = (BYTE) SvIV(ST(3));
+        value.rgbGreen = (BYTE) SvIV(ST(4));
+        value.rgbRed   = (BYTE) SvIV(ST(5));
+        value.rgbReserved = (BYTE) (items == 7 ? SvIV(ST(6)) : 0xff);
+      }
+
+      RETVAL = FreeImage_SetPixelColor(dib, x, y, &value);
+    }
+  }
+OUTPUT:
+    RETVAL
+
+  #
+  # HasBackgroundColor
+  #
+
+BOOL
+HasBackgroundColor(dib)
+    Win32::GUI::DIBitmap   dib
+CODE:
+    RETVAL = FreeImage_HasBackgroundColor(dib);
+OUTPUT:
+    RETVAL
+
+  #
+  # GetBackgroundColor
+  #
+
+void
+GetBackgroundColor(dib)
+    Win32::GUI::DIBitmap   dib
+CODE:
+  {
+    RGBQUAD value;
+    if (FreeImage_GetBackgroundColor(dib, &value))
+    {
+      if(GIMME == G_ARRAY)
+      {
+        EXTEND(SP, 4);
+        XST_mIV( 0, value.rgbBlue);
+        XST_mIV( 1, value.rgbGreen);
+        XST_mIV( 2, value.rgbRed);
+        XST_mIV( 3, value.rgbReserved);
+        XSRETURN(4);
+      }
+      else
+      {
+        EXTEND(SP, 1);
+        XST_mIV( 0, *((UINT*)&value));
+        XSRETURN(1);
+      }
+    }
+    else
+      XSRETURN_UNDEF;
+  }
+
+  #
+  # SetBackgroundColor
+  #
+
+BOOL
+SetBackgroundColor(dib, ...)
+    Win32::GUI::DIBitmap   dib
+CODE:
+  {
+    RGBQUAD value;
+    if (items == 2)
+    {
+      if(SvROK(ST(1)) && SvTYPE(SvRV(ST(1))) == SVt_PVAV)
+      {
+        SV** sv ;
+        AV* av = (AV*) SvRV(ST(1));
+        value.rgbBlue     = (BYTE) ((sv = av_fetch(av, 0, 0)) ? SvIV(*sv) : 0);
+        value.rgbGreen    = (BYTE) ((sv = av_fetch(av, 1, 0)) ? SvIV(*sv) : 0);
+        value.rgbRed      = (BYTE) ((sv = av_fetch(av, 2, 0)) ? SvIV(*sv) : 0);
+        value.rgbReserved = (BYTE) ((sv = av_fetch(av, 3, 0)) ? SvIV(*sv) : 0xff);
+      }
+      else
+        *((UINT*)&value) = (BYTE) SvIV(ST(1));
+    }
+    else
+    {
+      value.rgbBlue  = (BYTE) SvIV(ST(1));
+      value.rgbGreen = (BYTE) SvIV(ST(2));
+      value.rgbRed   = (BYTE) SvIV(ST(3));
+      value.rgbReserved = (BYTE) (items == 5 ? SvIV(ST(4)) : 0xff);
+    }
+
+    RETVAL = FreeImage_SetBackgroundColor(dib, &value);
+  }
+OUTPUT:
+    RETVAL
+
+
+  #
+  #
+  ##################################################################
 
   ##################################################################
   #
@@ -1874,6 +2113,33 @@ OUTPUT:
     RETVAL
 
   #
+  #  ConvertToStandardType convertion
+  #
+
+Win32::GUI::DIBitmap
+ConvertToStandardType(dib,scale_linear=TRUE)
+    Win32::GUI::DIBitmap dib
+    BOOL scale_linear
+CODE:
+    RETVAL = FreeImage_ConvertToStandardType(dib, scale_linear);
+OUTPUT:
+    RETVAL
+
+  #
+  #  ConvertToType convertion
+  #
+
+Win32::GUI::DIBitmap
+ConvertToType(dib,dst_type,scale_linear=TRUE)
+    Win32::GUI::DIBitmap dib
+    FREE_IMAGE_TYPE dst_type
+    BOOL scale_linear
+CODE:
+    RETVAL = FreeImage_ConvertToType(dib, dst_type, scale_linear);
+OUTPUT:
+    RETVAL
+
+  #
   #
   #
   ##################################################################
@@ -2084,6 +2350,33 @@ OUTPUT:
     RETVAL
 
   #
+  # GetComplexChannel
+  #
+
+Win32::GUI::DIBitmap
+GetComplexChannel (dib, channel)
+    Win32::GUI::DIBitmap dib
+    FREE_IMAGE_COLOR_CHANNEL channel
+CODE:
+    RETVAL = FreeImage_GetComplexChannel (dib, channel);
+OUTPUT:
+    RETVAL
+
+  #
+  # SetComplexChannel
+  #
+
+BOOL
+SetComplexChannel (dib, channel, dibcomplex)
+    Win32::GUI::DIBitmap dib
+    FREE_IMAGE_COLOR_CHANNEL channel
+    Win32::GUI::DIBitmap dibcomplex
+CODE:
+    RETVAL = FreeImage_SetComplexChannel (dib, dibcomplex, channel);
+OUTPUT:
+    RETVAL
+
+  #
   #
   ##################################################################
 
@@ -2121,6 +2414,48 @@ Paste(dest, src, left, top, alpha)
     int alpha
 CODE:
     RETVAL = FreeImage_Paste(dest, src, left, top, alpha);
+OUTPUT:
+    RETVAL
+
+  #
+  # Composite
+  #
+
+Win32::GUI::DIBitmap
+Composite(dib, useFileBkg=FALSE, dibBkg=NULL, ...)
+    Win32::GUI::DIBitmap   dib
+    BOOL  useFileBkg
+    Win32::GUI::DIBitmap   dibBkg
+CODE:
+  {
+    RGBQUAD *pColor = NULL;
+    RGBQUAD Color;
+    if (items == 4)
+    {
+      if(SvROK(ST(3)) && SvTYPE(SvRV(ST(3))) == SVt_PVAV)
+      {
+        SV** sv ;
+        AV* av = (AV*) SvRV(ST(3));
+        Color.rgbBlue     = (BYTE) ((sv = av_fetch(av, 0, 0)) ? SvIV(*sv) : 0);
+        Color.rgbGreen    = (BYTE) ((sv = av_fetch(av, 1, 0)) ? SvIV(*sv) : 0);
+        Color.rgbRed      = (BYTE) ((sv = av_fetch(av, 2, 0)) ? SvIV(*sv) : 0);
+        Color.rgbReserved = (BYTE) ((sv = av_fetch(av, 3, 0)) ? SvIV(*sv) : 0xff);
+      }
+      else
+        *((UINT*)&Color) = (BYTE) SvIV(ST(3));
+      pColor = &Color;
+    }
+    else if (items == 6 || items == 7)
+    {
+      Color.rgbBlue  = (BYTE) SvIV(ST(3));
+      Color.rgbGreen = (BYTE) SvIV(ST(4));
+      Color.rgbRed   = (BYTE) SvIV(ST(5));
+      Color.rgbReserved = (BYTE) (items == 7 ? SvIV(ST(6)) : 0xff);
+      pColor = &Color;
+    }
+
+    RETVAL = FreeImage_Composite(dib, useFileBkg, pColor, dibBkg);
+  }
 OUTPUT:
     RETVAL
 

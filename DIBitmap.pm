@@ -39,6 +39,7 @@ require AutoLoader;
         FIF_WBMP
         FIF_PSD
         FIF_XBM
+        FIF_DDS
         FIC_MINISWHITE
         FIC_MINISBLACK
         FIC_RGB
@@ -51,23 +52,37 @@ require AutoLoader;
         FICC_BLUE
         FICC_ALPHA
         FICC_BLACK
+        FICC_REAL
+        FICC_IMAG
+        FICC_MAG
+        FICC_PHASE
         FID_FS
         FID_BAYER4x4
         FID_BAYER8x8
         FID_CLUSTER6x6
         FID_CLUSTER8x8
         FID_CLUSTER16x16
-        FIQ_WUQUANT
-        FIQ_NNQUANT
         FILTER_BOX
         FILTER_BICUBIC
         FILTER_BILINEAR
         FILTER_BSPLINE
         FILTER_CATMULLROM
         FILTER_LANCZOS3
+        FIQ_WUQUANT
+        FIQ_NNQUANT
+        FIT_UNKNOWN
+        FIT_BITMAP
+        FIT_UINT16
+        FIT_INT16
+        FIT_UINT32
+        FIT_INT32
+        FIT_FLOAT
+        FIT_DOUBLE
+        FIT_COMPLEX
         BMP_DEFAULT
         BMP_SAVE_RLE
         CUT_DEFAULT
+        DDS_DEFAULT
         ICO_DEFAULT
         IFF_DEFAULT
         JPEG_DEFAULT
@@ -106,7 +121,7 @@ require AutoLoader;
         XPM_DEFAULT
 );
 
-$VERSION = '0.13';
+$VERSION = '0.14';
 
 sub AUTOLOAD {
     # This AUTOLOAD is used to 'autoload' constants from the constant()
@@ -348,36 +363,37 @@ and some image manipulation.
 Win32::GUI::DIBitmap add new reading/writing bitmap formats to Win32::GUI
 and some image manipulation.
 
-This package use FreeImage 3.0.4, an open source image library supporting all common
+This package use FreeImage 3.2.0, an open source image library supporting all common
 bitmap formats (visit : http://freeimage.sourceforge.net/ ).
 
 Supports many formats, such as:
 
    Format  Reading Writing Description
-   BMP Y   Y   Windows or OS/2 Bitmap [Export = 1 4 8 16 24 32]
-   ICO Y   Y   Windows Icon [Export = 1 4 8 16 24 32]
-   JPEG    Y   Y   JPEG - JFIF Compliant [Export = 8 24]
-   JNG Y   N   JPEG Network Graphics
-   KOALA   Y   N   C64 Koala Graphics
-   IFF Y   N   IFF Interleaved Bitmap
-   MNG Y   N   Multiple Network Graphics
-   PBM Y   Y   Portable Bitmap (ASCII) [Export = 1 8 24]
-   PBMRAW  Y   Y   Portable Bitmap (RAW) [Export = 1 8 24]
-   PCD Y   N   Kodak PhotoCD
-   PCX Y   N   Zsoft Paintbrush
-   PGM Y   Y   Portable Greymap (ASCII) [Export = 1 8 24]
-   PGMRAW  Y   Y   Portable Greymap (RAW) [Export = 1 8 24]
-   PNG Y   Y   Portable Network Graphics [Export = 1 4 8 24 32]
-   PPM Y   Y   Portable Pixelmap (ASCII) [Export = 1 8 24]
-   PPMRAW  Y   Y   Portable Pixelmap (RAW) [Export = 1 8 24]
-   RAS Y   N   Sun Raster Image
-   TARGA   Y   Y   Truevision Targa [Export = 1 4 8 16 24 32]
-   TIFF    Y   Y   Tagged Image File Format [Export = 1 4 8 24 32]
-   WBMP    Y   Y   Wireless Bitmap [Export = 1]
-   PSD Y   N   Adobe Photoshop
-   CUT Y   N   Dr. Halo
-   XBM Y   N   X11 Bitmap Format
-   XPM Y   N   X11 Pixmap Format
+   BMP     Y       Y       Windows or OS/2 Bitmap [Export = 1 4 8 16 24 32]
+   ICO     Y       Y       Windows Icon [Export = 1 4 8 16 24 32]
+   JPEG    Y       Y       JPEG - JFIF Compliant [Export = 8 24]
+   JNG     Y       N       JPEG Network Graphics
+   KOALA   Y       N       C64 Koala Graphics
+   IFF     Y       N       IFF Interleaved Bitmap
+   MNG     Y       N       Multiple Network Graphics
+   PBM     Y       Y       Portable Bitmap (ASCII) [Export = 1 8 24]
+   PBMRAW  Y       Y       Portable Bitmap (RAW) [Export = 1 8 24]
+   PCD     Y       N       Kodak PhotoCD
+   PCX     Y       N       Zsoft Paintbrush
+   PGM     Y       Y       Portable Greymap (ASCII) [Export = 1 8 24]
+   PGMRAW  Y       Y       Portable Greymap (RAW) [Export = 1 8 24]
+   PNG     Y       Y       Portable Network Graphics [Export = 1 4 8 24 32]
+   PPM     Y       Y       Portable Pixelmap (ASCII) [Export = 1 8 24]
+   PPMRAW  Y       Y       Portable Pixelmap (RAW) [Export = 1 8 24]
+   RAS     Y       N       Sun Raster Image
+   TARGA   Y       Y       Truevision Targa [Export = 8 16 24 32]
+   TIFF    Y       Y       Tagged Image File Format [Export = 1 4 8 24 32]
+   WBMP    Y       Y       Wireless Bitmap [Export = 1]
+   PSD     Y       N       Adobe Photoshop
+   CUT     Y       N       Dr. Halo
+   XBM     Y       N       X11 Bitmap Format
+   XPM     Y       N       X11 Pixmap Format
+   DDS     Y       N       DirectDraw Surface
 
 FreeImage can handle multi-page file (TIFF and ICO support only).
 
@@ -406,7 +422,7 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
   FIF_PGMRAW  FIF_PNG    FIF_PPM    FIF_PPMRAW
   FIF_RAS     FIF_TARGA  FIF_TIFF   FIF_WBMP
   FIF_PSD     FIF_IFF    FIF_LBM    FIF_CUT
-  FIF_XBM     FIF_XPM
+  FIF_XBM     FIF_XPM    FIF_DDS
 
 =item C<GetFIFCount> ()
 
@@ -458,13 +474,33 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
 
   This format can be write bpp image ?
 
+=item C<FIFSupportsExportType> (fif, type)
+
+  This format can export as image format type ?
+
+=item C<FIFSupportsICCProfiles> (fif)
+
+  This format support ICC profile ?
+
 =head1 DIBITMAP OBJECT
 
 =head2 DIBitmap New methods
 
-=item C<new> ([width=100, height=100, bpp=24, redmask=0, bluemask=0, greemask=0])
+=item C<new> ([width=100, height=100, bpp=24, redmask=0, bluemask=0, greemask=0, type=FIT_BITMAP])
 
   Allocate a Win32::GUI::DIBitmap object.
+
+  Image storage type availlable.
+
+  FIT_UNKNOWN = 0 : unknown type
+  FIT_BITMAP  = 1 : standard image           : 1-, 4-, 8-, 16-, 24-, 32-bit
+  FIT_UINT16  = 2 : array of unsigned short  : unsigned 16-bit
+  FIT_INT16   = 3 : array of short           : signed 16-bit
+  FIT_UINT32  = 4 : array of unsigned long   : unsigned 32-bit
+  FIT_INT32   = 5 : array of long            : signed 32-bit
+  FIT_FLOAT   = 6 : array of float           : 32-bit IEEE floating point
+  FIT_DOUBLE  = 7 : array of double          : 64-bit IEEE floating point
+  FIT_COMPLEX = 8 : array of FICOMPLEX       : 2 x 64-bit IEEE floating point
 
 =item C<newFromFile> (filename, [flag])
 
@@ -613,6 +649,10 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
 
   Image is transparent.
 
+=item C<GetImageType> ()
+
+  Return image type.
+
 =head2 DIBitmap and GD
 
 =item C<newFromGD> (gd, newGD=0)
@@ -632,6 +672,36 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
 
   Copy Win32::GUI::DIBitmap into GD image.
   GD and Win32::GUI::DIBitmap must have same size and format.
+
+=head2 DIBitmap Pixels and Background methods
+
+=item C<GetPixel> (x, y)
+
+  Return pixel value color at x, y or undef if error.
+  For image with BPP <= 8 return palette index color.
+  For image with BPP > 8  return color value.
+  This color value can be an integer value or a [B,G,R,A] array.
+
+=item C<SetPixel> (x, y, color | Blue, Green, Red, [Alpha])
+
+  Set pixel value color at x, y.
+  Return boolean value.
+  For image with BPP <= 8, it's palette color index.
+  For image with BPP > 8, arguments can an integer color value or B,G,R,[A] values.
+
+=item C<HasBackgroundColor> ()
+
+  Indicate if image have Background Color.
+
+=item C<GetBackgroundColor> ()
+
+  Return Background Color or undef if error.
+  This color value can be an integer value or a [B,G,R,A] array.
+
+=item C<SetBackgroundColor> (color | Blue, Green, Red, [Alpha])
+
+  Set Background Color.
+  Return boolean value.
 
 =head2 DIBitmap Convertion methods
 
@@ -684,6 +754,13 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
   FID_CLUSTER6x6    = Ordered clustered dot dithering (order 3 - 6*6 matrix)
   FID_CLUSTER8x8    = Ordered clustered dot dithering (order 4 - 8*8 matrix)
   FID_CLUSTER16x16  = Ordered clustered dot dithering (order 8 - 16*16 matrix)
+
+
+=item C<ConvertToStandardType> ([scale_linear=TRUE])
+
+=item C<ConvertToType> (type, [scale_linear=TRUE])
+
+  For type see new method.
 
 =head2 DIBitmap Rotating and flipping
 
@@ -785,6 +862,10 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
   FICC_BLUE    = 3 : Use blue channel
   FICC_ALPHA   = 4 : Use alpha channel
   FICC_BLACK   = 5 : Use black channel
+  FICC_REAL    = 6 : Complex images: use real part
+  FICC_IMAG    = 7 : Complex images: use imaginary part
+  FICC_MAG     = 8 : Complex images: use magnitude
+  FICC_PHASE   = 9 : Complex images: use phase
 
 =item C<GetChannel> (channel)
 
@@ -798,7 +879,23 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
 =item C<SetChannel> (channel, 8bit_image)
 
   Set the red, green, blue or alpha channel of a 24 or 32-bit BGR[A] image.
+  Channel is the color channel to set.
+
+  24,32 only
+
+=item C<GetComplexChannel> (channel)
+
+  Return a complex channel Win32::GUI::DIBitmap.
+
+  Retrieves the red, green, blue or alpha channel of a 24 or 32-bit BGR[A] image.
   Channel is the color channel to extract.
+
+  24,32 only
+
+=item C<SetComplexChannel> (channel, 8bit_image)
+
+  Set the red, green, blue or alpha channel of a 24 or 32-bit BGR[A] image.
+  Channel is the complex channel to set.
 
   24,32 only
 
@@ -827,6 +924,9 @@ FreeImage can handle multi-page file (TIFF and ICO support only).
   Alpha is alpha blend factor.
   The source and destination images are alpha blended if alpha=0..255.
   If alpha > 255, then the source image is combined to the destination image.
+
+=item C<Composite> ([useFileBkg=FALSE, imageBkg=undef appBkColor=undef)
+
 
 =head2 DIBitmap Devise Context methods
 

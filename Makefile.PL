@@ -12,7 +12,7 @@ WriteMakefile(
     'MYEXTLIB' => 'extlib/FreeImage.lib',
      ($] ge '5.005')
      ? (
-      'AUTHOR'   => 'ROCHER Laurent (rocherl@club-internet.fr)',
+      'AUTHOR'   => 'ROCHER Laurent (lrocher@cpan.org)',
       'ABSTRACT' => 'Add new load/save image format and some image manipulation',
      )
      : (),
