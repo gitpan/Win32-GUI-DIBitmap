@@ -1,0 +1,37 @@
+TYPEMAP
+LPCTSTR                   T_PV
+LPCSTR                    T_PV
+LPTSTR                    T_PV
+DWORD                     T_IV
+UINT                      T_IV
+BOOL                      T_IV
+FREE_IMAGE_FORMAT         T_IV
+FREE_IMAGE_QUANTIZE       T_IV
+FREE_IMAGE_COLOR_TYPE     T_IV
+FREE_IMAGE_DITHER         T_IV
+FREE_IMAGE_FILTER         T_IV
+FREE_IMAGE_COLOR_CHANNEL  T_IV
+Win32::GUI::DIBitmap      T_PTROBJ
+Win32::GUI::DIBitmap::Ext T_PTROBJ
+Win32::GUI::MDIBitmap     T_PTROBJ
+HBITMAP                   T_HANDLE
+HDC                       T_HANDLE
+HWND                      T_HANDLE
+GD::Image                 T_PTROBJ
+
+################################################################################
+INPUT
+T_HANDLE
+    if(SvROK($arg)) {
+        if(hv_fetch((HV*)SvRV($arg), \"-handle\", 7, 0) != NULL)
+            $var = ($type) SvIV(*(hv_fetch((HV*)SvRV($arg), \"-handle\", 7, 0)));
+        else
+            $var = NULL;
+    } else
+        $var = ($type) SvIV($arg);
+
+################################################################################
+OUTPUT
+T_HANDLE
+    sv_setiv($arg, (IV) $var);
+
